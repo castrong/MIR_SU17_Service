@@ -16,9 +16,9 @@ c2 = 1 - np.dot(np.transpose(Q), R)
 
 # setup parameters
 
-dn = [1,1,2,1]
-dm = [1,2,1,3]
-dw = [1.0, 1.0, 2.0, 3.0]
+dn = np.array([1,1,2,1])
+dm = np.array([1,2,1,3])
+dw = np.array([1.0, 1.0, 2.0, 3.0])
 subsequence = True
 parameter = {'dn': dn, 'dm': dm, 'dw': dw, 'SubSequence': subsequence}
 
@@ -50,9 +50,9 @@ print("Total: %f"%(np.mean(secondStepEndTime - startTime)))
 
 # setup parameters
 
-dn = [1,1,2,1]
-dm = [1,2,1,3]
-dw = [1.0, 1.0, 2.0, 3.0]
+dn = np.array([1,1,2,1])
+dm = np.array([1,2,1,3])
+dw = np.array([1.0, 1.0, 2.0, 3.0])
 subsequence = False
 parameter = {'dn': dn, 'dm': dm, 'dw': dw, 'SubSequence': subsequence}
 
