@@ -3,42 +3,52 @@ cimport numpy as np
 import sys
 
 
-def DTW_Cost_To_AccumCostAndSteps(C, parameter):
+DTYPE_INT = np.int
+
+ctypedef np.int_t DTYPE_INT_t
+
+DTYPE_FLOAT = np.float64
+ctypedef np.float64_t DTYPE_FLOAT_t
+
+
+def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter):
     '''
     Inputs
         C: The cost Matrix
     '''
-    C = np.array(C)
+
+    cdef np.ndarray[DTYPE_INT_t, ndim=1] dn
+    cdef np.ndarray[DTYPE_INT_t, ndim=1] dm
+    cdef np.ndarray[DTYPE_FLOAT_t, ndim=1] dw
     # make sure dn, dm, and dw are setup
     if ('dn'  in parameter.keys()):
         dn = parameter['dn']
     else:
-        dn = [1, 1, 0]
+        dn = np.array([1, 1, 0], dtype=DTYPE_INT)
     
     if 'dm'  in parameter.keys():
         dm = parameter['dm']
     else:
-        dm = [1, 0, 1]
-    
+        dm = np.array([1, 0, 1], dtype=DTYPE_INT)
     if 'dw'  in parameter.keys():
         dw = parameter['dw']
     else:
-        dw = [1, 1, 1]
+        dw = np.array([1, 1, 1], dtype=DTYPE_FLOAT)
 
     # add better guards, make sure C is okay / check to make sure dn / dm / dw are okay
     
     #print('dn is %s\ndm is %s\ndw is %s\n'%(str(dn), str(dm), str(dw)))
 
     # create matrices to store our results (D and E)
-    numRows = C.shape[0] # only works with np arrays, use np.shape(x) will work on lists? want to force to use np though?
-    numCols = C.shape[1]
-    numDifSteps = np.size(dw)
+    cdef int numRows = C.shape[0] # only works with np arrays, use np.shape(x) will work on lists? want to force to use np though?
+    cdef int numCols = C.shape[1]
+    cdef int numDifSteps = np.size(dw)
 
-    maxRowStep = max(dn)
-    maxColStep = max(dm)
+    cdef int maxRowStep = max(dn)
+    cdef int maxColStep = max(dm)
 
-    steps = np.zeros((numRows,numCols), dtype=int)
-    accumCost = np.ones((maxRowStep + numRows, maxColStep + numCols)) * float('inf')
+    cdef np.ndarray[DTYPE_INT_t, ndim=2] steps = np.zeros((numRows,numCols), dtype=DTYPE_INT)
+    cdef np.ndarray[DTYPE_FLOAT_t, ndim=2] accumCost = np.ones((maxRowStep + numRows, maxColStep + numCols), dtype=DTYPE_FLOAT) * float('inf')
 
     # essentially allow us to hop on the bottom anywhere (so could start partway through one of the signals)
     if parameter['SubSequence']:
@@ -47,7 +57,11 @@ def DTW_Cost_To_AccumCostAndSteps(C, parameter):
     else:
         accumCost[maxRowStep, maxColStep] = C[0,0]
 
-    np.set_printoptions(threshold='nan')
+    #np.set_printoptions(threshold='nan')
+
+    cdef DTYPE_FLOAT_t bestCost
+    cdef DTYPE_INT_t bestCostIndex
+    cdef DTYPE_FLOAT_t costForStep
 
     for row in range(maxRowStep, numRows + maxRowStep, 1):
         for col in range(maxColStep, numCols + maxColStep, 1):
