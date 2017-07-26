@@ -22,8 +22,8 @@ def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter
         C: The cost Matrix
     '''
 
-    cdef np.ndarray[DTYPE_INT16_t, ndim=1] dn
-    cdef np.ndarray[DTYPE_INT16_t, ndim=1] dm
+    cdef np.ndarray[unsigned int, ndim=1] dn
+    cdef np.ndarray[unsigned int, ndim=1] dm
     cdef np.ndarray[DTYPE_FLOAT_t, ndim=1] dw
     # make sure dn, dm, and dw are setup
     if ('dn'  in parameter.keys()):
@@ -49,17 +49,17 @@ def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter
     cdef DTYPE_INT32_t numCols = C.shape[1]
     cdef DTYPE_INT16_t numDifSteps = np.size(dw)
 
-    cdef DTYPE_INT32_t maxRowStep = max(dn)
-    cdef DTYPE_INT32_t maxColStep = max(dm)
+    cdef unsigned int maxRowStep = max(dn)
+    cdef unsigned int maxColStep = max(dm)
 
-    cdef np.ndarray[DTYPE_INT16_t, ndim=2] steps = np.zeros((numRows,numCols), dtype=DTYPE_INT16)
+    cdef np.ndarray[np.uint16_t, ndim=2] steps = np.zeros((numRows,numCols), dtype=np.uint16)
     cdef np.ndarray[DTYPE_FLOAT_t, ndim=2] accumCost = np.ones((maxRowStep + numRows, maxColStep + numCols), dtype=DTYPE_FLOAT) * float('inf')
 
     cdef DTYPE_FLOAT_t bestCost
     cdef DTYPE_INT16_t bestCostIndex
     cdef DTYPE_FLOAT_t costForStep
-    cdef DTYPE_INT32_t row, col
-    cdef DTYPE_INT16_t stepIndex
+    cdef unsigned int row, col
+    cdef unsigned int stepIndex
 
     # essentially allow us to hop on the bottom anywhere (so could start partway through one of the signals)
     if parameter['SubSequence']:
@@ -74,17 +74,18 @@ def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter
 
     for row in range(maxRowStep, numRows + maxRowStep, 1):
         for col in range(maxColStep, numCols + maxColStep, 1):
-            bestCost = accumCost[row, col] # initialize with what's there - so if is an entry point, then can start low
+            bestCost = accumCost[<unsigned int>row, <unsigned int>col] # initialize with what's there - so if is an entry point, then can start low
             bestCostIndex = 0
             # go through each step, find the best one
             for stepIndex in range(numDifSteps):
-                costForStep = accumCost[row - dn[stepIndex], col - dm[stepIndex]] + dw[stepIndex] * C[row - maxRowStep, col - maxColStep]
+                #costForStep = accumCost[<unsigned int>(row - dn[<unsigned int>(stepIndex)]), <unsigned int>(col - dm[<unsigned int>(stepIndex)])] + dw[<unsigned int>(stepIndex)] * C[<unsigned int>(row - maxRowStep), <unsigned int>(col - maxColStep)]
+                costForStep = accumCost[<unsigned int>((row - dn[(stepIndex)])), <unsigned int>((col - dm[(stepIndex)]))] + dw[stepIndex] * C[<unsigned int>(row - maxRowStep), <unsigned int>(col - maxColStep)]
                 if costForStep < bestCost:
                     bestCost = costForStep
                     bestCostIndex = stepIndex
             # save the best cost and best cost index
             accumCost[row, col] = bestCost
-            steps[row - maxRowStep, col - maxColStep] = bestCostIndex
+            steps[<unsigned int>(row - maxRowStep), <unsigned int>(col - maxColStep)] = bestCostIndex
 
     endLoopTime = time.time()
 
