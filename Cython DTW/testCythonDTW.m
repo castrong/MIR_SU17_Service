@@ -28,7 +28,7 @@ parameter.EndIndex = int32(optOffset1); % must specify endpoint
 P1 = TH_DTW_E_to_Warpingpath(B1,parameter);
 
 % load in things
-pythonResults = load('testCythonDTW_subseq_python.mat')
+pythonResults = load('testCythonDTW_Subseq_python.mat')
 S2 = pythonResults.accumCost;
 B2 = pythonResults.stepMatrix;
 optCost2 = pythonResults.endCost;
@@ -57,7 +57,7 @@ if ~isequal(P1,P2)
     failedTests = failedTests + 1;
 end
 if failedTests == 0
-    disp(sprintf('Subseq DTW implementation passes subseq test'));
+    disp(sprintf('DTW implementation passes subseq test'));
 end
 
 % Run AudioLabs non subsequence DTW code as reference
@@ -103,6 +103,6 @@ if ~isequal(P1,P2)
     failedTests = failedTests + 1;
 end
 if failedTests == 0
-    disp(sprintf('Subseq DTW implementation passes non subseq test'));
+    disp(sprintf('DTW implementation passes non subseq test'));
 end
 

@@ -26,7 +26,7 @@ subsequence = True
 parameter = {'dn': dn, 'dm': dm, 'dw': dw, 'SubSequence': subsequence}
 
 # loop through and do it a few times
-numIterations = 100
+numIterations = 50
 firstStepTimes = []
 secondStepTimes = []
 totalTimes = []
@@ -60,7 +60,7 @@ subsequence = False
 parameter = {'dn': dn, 'dm': dm, 'dw': dw, 'SubSequence': subsequence}
 
 # loop through and do it a few times
-numIterations = 100
+numIterations = 50
 firstStepTimes = []
 secondStepTimes = []
 totalTimes = []

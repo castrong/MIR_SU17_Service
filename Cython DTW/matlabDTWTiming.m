@@ -9,13 +9,15 @@ load('test_Shostakovich_JazzSuite2_6_Waltz2_Yablonsky_CENS_41_10.mat');
 R = f_CENS';
 C{2} = 1-Q'*R;
 
+C{2} = normrnd(0,1,2000,2000)
+
 % Run MIRlab subseq DTW code
 stepsQ = int32([1 1 2 1]);
 stepsR = int32([1 2 1 3]);
 weights = [1.0 1.0 2.0];
 subsequence = true;
 
-numIterations = 100;
+numIterations = 2000;
 firstStepTimes = [];
 secondStepTimes = [];
 totalTimes = [];
@@ -45,7 +47,7 @@ stepsR = int32([1 2 1 3]);
 weights = [1.0 1.0 2.0];
 subsequence = false;
 
-numIterations = 100;
+numIterations = 2000;
 firstStepTimes = [];
 secondStepTimes = [];
 totalTimes = [];
