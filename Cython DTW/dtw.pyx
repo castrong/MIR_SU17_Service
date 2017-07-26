@@ -16,34 +16,75 @@ cdef DTYPE_FLOAT_t MAX_FLOAT = float('inf')
 
 # careful, without bounds checking can mess up memory - also can't use negative indices I think (like x[-1])
 @cython.boundscheck(False) # turn off bounds-checking for entire function
-def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter):
+def DTW_Cost_To_AccumCostAndSteps(Cin, parameter):
     '''
     Inputs
         C: The cost Matrix
     '''
 
-    cdef np.ndarray[unsigned int, ndim=1] dn
-    cdef np.ndarray[unsigned int, ndim=1] dm
+
+    '''
+    Section for checking and catching errors in the inputs
+    '''
+
+    cdef np.ndarray[DTYPE_FLOAT_t, ndim=2] C
+    try:
+        C = np.array(Cin, dtype=DTYPE_FLOAT)
+    except TypeError:
+        print(bcolors.FAIL + "FAILURE: The type of the cost matrix is wrong - please pass in a 2-d numpy array" + bcolors.ENDC)
+        return [-1, -1, -1]
+    except ValueError:
+        print(bcolors.FAIL + "FAILURE: The type of the elements in the cost matrix is wrong - please have each element be a float (perhaps you passed in a matrix of ints?)" + bcolors.ENDC)
+        return [-1, -1, -1]
+
+    cdef np.ndarray[np.uint32_t, ndim=1] dn
+    cdef np.ndarray[np.uint32_t, ndim=1] dm
     cdef np.ndarray[DTYPE_FLOAT_t, ndim=1] dw
     # make sure dn, dm, and dw are setup
+    # dn loading and exception handling
     if ('dn'  in parameter.keys()):
-        dn = parameter['dn']
+        try:
+
+            dn = np.array(parameter['dn'], dtype=np.uint32)
+        except TypeError:
+            print(bcolors.FAIL + "FAILURE: The type of dn (row steps) is wrong - please pass in a 1-d numpy array that holds uint32s" + bcolors.ENDC)
+            return [-1, -1, -1]
+        except ValueError:
+            print(bcolors.FAIL + "The type of the elements in dn (row steps) is wrong - please have each element be a uint32 (perhaps you passed a long?). You can specify this when making a numpy array like: np.array([1,2,3],dtype=np.uint32)" + bcolors.ENDC)
+            return [-1, -1, -1]
     else:
-        dn = np.array([1, 1, 0], dtype=DTYPE_INT32)
-    
+        dn = np.array([1, 1, 0], dtype=np.uint32)
+    # dm loading and exception handling
     if 'dm'  in parameter.keys():
-        dm = parameter['dm']
+        try:
+            dm = np.array(parameter['dm'], dtype=np.uint32)
+        except TypeError:
+            print(bcolors.FAIL + "FAILURE: The type of dm (col steps) is wrong - please pass in a 1-d numpy array that holds uint32s" + bcolors.ENDC)
+            return [-1, -1, -1]
+        except ValueError:
+            print(bcolors.FAIL + "FAILURE: The type of the elements in dm (col steps) is wrong - please have each element be a uint32 (perhaps you passed a long?). You can specify this when making a numpy array like: np.array([1,2,3],dtype=np.uint32)" + bcolors.ENDC)
+            return [-1, -1, -1]
     else:
-        dm = np.array([1, 0, 1], dtype=DTYPE_INT32)
+        print(bcolors.FAIL + "dm (col steps) was not passed in (gave default value [1,0,1]) " + bcolors.ENDC)
+        dm = np.array([1, 0, 1], dtype=np.uint32)
+    # dw loading and exception handling
     if 'dw'  in parameter.keys():
-        dw = parameter['dw']
+        try:
+            dw = np.array(parameter['dw'], dtype=DTYPE_FLOAT)
+        except TypeError:
+            print(bcolors.FAIL + "FAILURE: The type of dw (step weights) is wrong - please pass in a 1-d numpy array that holds floats" + bcolors.ENDC)
+            return [-1, -1, -1]
+        except ValueError:
+            print(bcolors.FAIL + "FAILURE:The type of the elements in dw (step weights) is wrong - please have each element be a float (perhaps you passed ints or a long?). You can specify this when making a numpy array like: np.array([1,2,3],dtype=np.float64)" + bcolors.ENDC)
+            return [-1, -1, -1]
     else:
         dw = np.array([1, 1, 1], dtype=DTYPE_FLOAT)
+        print(bcolors.FAIL + "dw (step weights) was not passed in (gave default value [1,1,1]) " + bcolors.ENDC)
 
-    # add better guards, make sure C is okay / check to make sure dn / dm / dw are okay
     
-    #print('dn is %s\ndm is %s\ndw is %s\n'%(str(dn), str(dm), str(dw)))
-
+    '''
+    Section where types are given to the variables we're going to use 
+    '''
     # create matrices to store our results (D and E)
     cdef DTYPE_INT32_t numRows = C.shape[0] # only works with np arrays, use np.shape(x) will work on lists? want to force to use np though?
     cdef DTYPE_INT32_t numCols = C.shape[1]
@@ -61,6 +102,10 @@ def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter
     cdef unsigned int row, col
     cdef unsigned int stepIndex
 
+    '''
+    The start of the actual algorithm, now that all our variables are set up
+    '''
+    # initializing the cost matrix - depends on whether its subsequence DTW
     # essentially allow us to hop on the bottom anywhere (so could start partway through one of the signals)
     if parameter['SubSequence']:
         for col in range(numCols):
@@ -68,10 +113,7 @@ def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter
     else:
         accumCost[maxRowStep, maxColStep] = C[0,0]
 
-    #np.set_printoptions(threshold='nan')
-
-    startLoopTime = time.time()
-
+    # filling the accumulated cost matrix
     for row in range(maxRowStep, numRows + maxRowStep, 1):
         for col in range(maxColStep, numCols + maxColStep, 1):
             bestCost = accumCost[<unsigned int>row, <unsigned int>col] # initialize with what's there - so if is an entry point, then can start low
@@ -87,8 +129,7 @@ def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter
             accumCost[row, col] = bestCost
             steps[<unsigned int>(row - maxRowStep), <unsigned int>(col - maxColStep)] = bestCostIndex
 
-    endLoopTime = time.time()
-
+    # return the accumulated cost along with the matrix of steps taken to achieve that cost
     return [accumCost[maxRowStep:, maxColStep:], steps]
 
 @cython.boundscheck(False) # turn off bounds-checking for entire function
@@ -174,7 +215,15 @@ def DTW_GetPath(np.ndarray[DTYPE_FLOAT_t, ndim=2] accumCost, np.ndarray[np.uint3
     # reverse the path (a matrix with two rows) and return it
     return [np.fliplr(path[:, 0:stepsInPath]), endCol, endCost]
 
-
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 
 
