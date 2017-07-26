@@ -1,35 +1,40 @@
 import numpy as np
 cimport numpy as np
+cimport cython
+
 import sys
+import time
 
+DTYPE_INT16 = np.int16
+ctypedef np.int16_t DTYPE_INT16_t
 
-DTYPE_INT = np.int
-
-ctypedef np.int_t DTYPE_INT_t
+DTYPE_INT32 = np.int32
+ctypedef np.int32_t DTYPE_INT32_t
 
 DTYPE_FLOAT = np.float64
 ctypedef np.float64_t DTYPE_FLOAT_t
 
-
+# careful, without bounds checking can mess up memory - also can't use negative indices I think (like x[-1])
+@cython.boundscheck(False) # turn off bounds-checking for entire function
 def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter):
     '''
     Inputs
         C: The cost Matrix
     '''
 
-    cdef np.ndarray[DTYPE_INT_t, ndim=1] dn
-    cdef np.ndarray[DTYPE_INT_t, ndim=1] dm
+    cdef np.ndarray[DTYPE_INT16_t, ndim=1] dn
+    cdef np.ndarray[DTYPE_INT16_t, ndim=1] dm
     cdef np.ndarray[DTYPE_FLOAT_t, ndim=1] dw
     # make sure dn, dm, and dw are setup
     if ('dn'  in parameter.keys()):
         dn = parameter['dn']
     else:
-        dn = np.array([1, 1, 0], dtype=DTYPE_INT)
+        dn = np.array([1, 1, 0], dtype=DTYPE_INT16)
     
     if 'dm'  in parameter.keys():
         dm = parameter['dm']
     else:
-        dm = np.array([1, 0, 1], dtype=DTYPE_INT)
+        dm = np.array([1, 0, 1], dtype=DTYPE_INT16)
     if 'dw'  in parameter.keys():
         dw = parameter['dw']
     else:
@@ -40,15 +45,21 @@ def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter
     #print('dn is %s\ndm is %s\ndw is %s\n'%(str(dn), str(dm), str(dw)))
 
     # create matrices to store our results (D and E)
-    cdef int numRows = C.shape[0] # only works with np arrays, use np.shape(x) will work on lists? want to force to use np though?
-    cdef int numCols = C.shape[1]
-    cdef int numDifSteps = np.size(dw)
+    cdef DTYPE_INT32_t numRows = C.shape[0] # only works with np arrays, use np.shape(x) will work on lists? want to force to use np though?
+    cdef DTYPE_INT32_t numCols = C.shape[1]
+    cdef DTYPE_INT16_t numDifSteps = np.size(dw)
 
-    cdef int maxRowStep = max(dn)
-    cdef int maxColStep = max(dm)
+    cdef DTYPE_INT32_t maxRowStep = max(dn)
+    cdef DTYPE_INT32_t maxColStep = max(dm)
 
-    cdef np.ndarray[DTYPE_INT_t, ndim=2] steps = np.zeros((numRows,numCols), dtype=DTYPE_INT)
+    cdef np.ndarray[DTYPE_INT16_t, ndim=2] steps = np.zeros((numRows,numCols), dtype=DTYPE_INT16)
     cdef np.ndarray[DTYPE_FLOAT_t, ndim=2] accumCost = np.ones((maxRowStep + numRows, maxColStep + numCols), dtype=DTYPE_FLOAT) * float('inf')
+
+    cdef DTYPE_FLOAT_t bestCost
+    cdef DTYPE_INT16_t bestCostIndex
+    cdef DTYPE_FLOAT_t costForStep
+    cdef DTYPE_INT32_t row, col
+    cdef DTYPE_INT16_t stepIndex
 
     # essentially allow us to hop on the bottom anywhere (so could start partway through one of the signals)
     if parameter['SubSequence']:
@@ -59,9 +70,7 @@ def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter
 
     #np.set_printoptions(threshold='nan')
 
-    cdef DTYPE_FLOAT_t bestCost
-    cdef DTYPE_INT_t bestCostIndex
-    cdef DTYPE_FLOAT_t costForStep
+    startLoopTime = time.time()
 
     for row in range(maxRowStep, numRows + maxRowStep, 1):
         for col in range(maxColStep, numCols + maxColStep, 1):
@@ -77,6 +86,8 @@ def DTW_Cost_To_AccumCostAndSteps(np.ndarray[DTYPE_FLOAT_t, ndim=2] C, parameter
             accumCost[row, col] = bestCost
             steps[row - maxRowStep, col - maxColStep] = bestCostIndex
 
+    endLoopTime = time.time()
+
     return [accumCost[maxRowStep:, maxColStep:], steps]
 
 def DTW_GetPath(accumCost, stepsForCost, parameter):
@@ -84,8 +95,6 @@ def DTW_GetPath(accumCost, stepsForCost, parameter):
 
     Parameter should have: 'dn', 'dm', 'dw', 'SubSequence'
     '''
-    
-
     numRows = accumCost.shape[0]
     numCols = accumCost.shape[1]
 
@@ -95,7 +104,7 @@ def DTW_GetPath(accumCost, stepsForCost, parameter):
     # sub-sequence of the signal along the columns has to be used
     curRow = numRows - 1
     if parameter['SubSequence']:
-        curCol = np.argmin(accumCost[-1, :])
+        curCol = np.argmin(accumCost[numCols - 1, :])
     else:
         curCol = numCols - 1
 

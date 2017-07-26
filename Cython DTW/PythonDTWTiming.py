@@ -14,10 +14,13 @@ fileTwo = sp.loadmat('test_Shostakovich_JazzSuite2_6_Waltz2_Yablonsky_CENS_41_10
 R = np.transpose(fileTwo['f_CENS'])
 c2 = 1 - np.dot(np.transpose(Q), R)
 
+
+c2 = np.random.normal(0,1,(2000,2000))
+
 # setup parameters
 
-dn = np.array([1,1,2,1])
-dm = np.array([1,2,1,3])
+dn = np.array([1,1,2,1], np.int16)
+dm = np.array([1,2,1,3], np.int16)
 dw = np.array([1.0, 1.0, 2.0, 3.0])
 subsequence = True
 parameter = {'dn': dn, 'dm': dm, 'dw': dw, 'SubSequence': subsequence}
@@ -50,8 +53,8 @@ print("Total: %f"%(np.mean(secondStepEndTime - startTime)))
 
 # setup parameters
 
-dn = np.array([1,1,2,1])
-dm = np.array([1,2,1,3])
+dn = np.array([1,1,2,1], dtype=np.int16)
+dm = np.array([1,2,1,3], dtype=np.int16)
 dw = np.array([1.0, 1.0, 2.0, 3.0])
 subsequence = False
 parameter = {'dn': dn, 'dm': dm, 'dw': dw, 'SubSequence': subsequence}
