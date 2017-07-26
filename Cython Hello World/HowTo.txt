@@ -1,0 +1,29 @@
+How to run this example:
+
+More involved process if you need to customize your build process / deal with libraries:
+
+You create the files:
+	1. helloworld.pyx (python code that will be converted to c)
+	2. setup.py
+
+Then run the line:
+	python setup.py build_ext --inplace
+to compile your code into c. Then go into the normal python environment and type
+
+import helloworld
+
+which will import it like a normal package. You then can run commands like:
+helloworld.hi() and it will run it =D
+
+
+Less involved process:
+
+1. Create the file helloworld2.pyx
+2. Go into python and run the following lines:
+import pyximport; pyximport.install()
+import helloworld
+
+great, it's imported again! If you want to have it try to 
+turn the standard library / other normal libraries things into c
+code if you import them, then run:
+pyximport.install(pyimport = True)
