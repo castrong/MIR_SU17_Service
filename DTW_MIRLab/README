@@ -1,0 +1,3 @@
+To compile, run the following at the matlab command line:
+
+mex -v CC=gcc LD=gcc COPTIMFLAGS='-Ofast' -largeArrayDims subseqDTW_costMatrix.cpp
