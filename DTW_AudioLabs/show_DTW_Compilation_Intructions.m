@@ -1,0 +1,10 @@
+disp('***************************************************************************');
+disp('This function of the DTW-Toolbox is not yet compiled on your platform!');
+disp('1. Setup mex compiler (if not already done):');
+disp('   >> mex -setup');
+disp('2. Switch to the "DTW-Toolbox" folder, e.g.:');
+disp('   >> cd efficiency/DTW');
+disp('3. execute the compile script:');
+disp('   >> Compile_DTW_Toolbox');
+disp('***************************************************************************');
+error('Desired fuction not yet compiled! See above!');
